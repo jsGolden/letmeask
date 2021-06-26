@@ -1,11 +1,13 @@
 import { useState, FormEvent } from "react";
 import { useParams } from "react-router-dom";
+import toast from "react-hot-toast";
 
 import { useAuth } from "../hooks/useAuth";
 import { useRoom } from "../hooks/useRoom";
 import { database } from "../services/firebase";
 
 import logoImg from "../assets/images/logo.svg";
+import messagesImg from "../assets/images/messages.svg";
 
 import { Button } from "../components/Button";
 import { RoomCode } from "../components/RoomCode";
@@ -18,7 +20,7 @@ type RoomParams = {
 };
 
 export function Room() {
-  const { user } = useAuth();
+  const { user, signInWithGoogle } = useAuth();
 
   const params = useParams<RoomParams>();
   const roomId = params.id;
@@ -35,7 +37,8 @@ export function Room() {
     }
 
     if (!user) {
-      throw new Error("Você precisa estar logado!");
+      toast.error('Você precisa estar logado para perguntar!');
+      return;
     }
 
     const question = {
@@ -57,13 +60,18 @@ export function Room() {
     questionId: string,
     likeId: string | undefined
   ) {
+    if (!user) {
+      toast.error('Você precisa estar logado para adicionar um like!');
+      return;
+    }
+
     if (likeId) {
       await database
         .ref(`rooms/${roomId}/questions/${questionId}/likes/${likeId}`)
         .remove();
     } else {
       await database.ref(`rooms/${roomId}/questions/${questionId}/likes`).push({
-        authorId: user?.id,
+        authorId: user.id,
       });
     }
   }
@@ -80,7 +88,7 @@ export function Room() {
       <main>
         <div className="room-title">
           <h1>Sala {title}</h1>
-          {questions.length && <span>{questions.length} pergunta(s)</span>}
+          {questions.length > 0 && <span>{questions.length} pergunta(s)</span>}
         </div>
 
         <form onSubmit={handleSendQuestion}>
@@ -98,7 +106,10 @@ export function Room() {
               </div>
             ) : (
               <span>
-                Para enviar uma pergunta, <button>faça seu login</button>.
+                Para enviar uma pergunta, 
+                <button
+                  onClick={signInWithGoogle}
+                >faça seu login</button>.
               </span>
             )}
             <Button type="submit" disabled={!user}>
@@ -108,6 +119,14 @@ export function Room() {
         </form>
 
         <div className="question-list">
+          {questions.length <= 0 && (
+            <div className="no-messages">
+              <img src={messagesImg} alt="Sem mensagens..." />
+              <h2>Nenhuma pergunta por aqui...</h2>
+              <p>Faça o seu login e seja a primeira pessoa a fazer uma pergunta!</p>
+            </div>
+          )}
+
           {questions.map((question) => (
             <Question
               key={question.id}

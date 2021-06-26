@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useHistory, useParams } from "react-router-dom";
 import { database } from "../services/firebase";
-import toast, { ToastBar } from "react-hot-toast";
+import toast from "react-hot-toast";
 
 import { useRoom } from "../hooks/useRoom";
 
@@ -9,6 +9,7 @@ import logoImg from "../assets/images/logo.svg";
 import deleteImg from "../assets/images/delete.svg";
 import checkImg from "../assets/images/check.svg";
 import answerImg from "../assets/images/answer.svg";
+import messagesImg from "../assets/images/messages.svg";
 
 import { ModalConfirmDelete } from "../components/ModalConfirmDelete";
 import { Button } from "../components/Button";
@@ -30,11 +31,19 @@ export function AdminRoom() {
   const { title, questions } = useRoom(roomId);
 
   const [currentDeleteQuestionId, setCurrentDeleteQuestionId] = useState<string>();
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalEndRoomOpen, setIsModalEndRoomOpen] = useState(false);
+  const [isModalDeleteQuestionOpen, setIsModalDeleteQuestionOpen] = useState(false);
 
   async function handleEndRoom() {
-    await database.ref(`rooms/${roomId}`).update({
+    const refPromise = database.ref(`rooms/${roomId}`).update({
       endedAt: new Date(),
+    });
+
+    setIsModalEndRoomOpen(false);
+    toast.promise(refPromise, {
+      loading: "Fechando...",
+      error: "Erro ao fechar!",
+      success: "Fechado com sucesso!"
     });
 
     history.push("/");
@@ -42,7 +51,7 @@ export function AdminRoom() {
 
   function handleQuestionClickDelete(questionId: string) {
     setCurrentDeleteQuestionId(questionId);
-    setIsModalOpen(true);
+    setIsModalDeleteQuestionOpen(true);
   }
 
   async function handleDeleteQuestion() {
@@ -50,12 +59,12 @@ export function AdminRoom() {
       .ref(`rooms/${roomId}/questions/${currentDeleteQuestionId}`)
       .remove();
 
-    setIsModalOpen(false);
+    setIsModalDeleteQuestionOpen(false);
     toast.promise(refPromise, {
       loading: "Deletando...",
       error: "Erro ao deletar!",
       success: "Deletado com sucesso!"
-    })
+    });
   }
 
   async function handleCheckQuestionAsAnswered(questionId: string) {
@@ -74,9 +83,23 @@ export function AdminRoom() {
     <div id="page-room">
 
       <ModalConfirmDelete
-        isOpen={isModalOpen}
+        isOpen={isModalEndRoomOpen}
+        onClickDelete={handleEndRoom}
+        onClickCancel={() => setIsModalEndRoomOpen(false)}
+        title="Encerrar sala"
+        subtitle="Tem certeza que você deseja encerrar esta sala?"
+        cancelButtonText="Sim, encerrar"
+        icon="error"
+      />
+
+      <ModalConfirmDelete
+        isOpen={isModalDeleteQuestionOpen}
         onClickDelete={handleDeleteQuestion}
-        onClickCancel={() => setIsModalOpen(false)}
+        onClickCancel={() => setIsModalDeleteQuestionOpen(false)}
+        title="Excluir pergunta"
+        subtitle="Tem certeza que você deseja excluir esta pergunta?"
+        cancelButtonText="Sim, excluir"
+        icon="trash"
       />
 
       <header>
@@ -84,7 +107,10 @@ export function AdminRoom() {
           <img src={logoImg} alt="Letmeask" />
           <div>
             <RoomCode code={roomId} />
-            <Button onClick={handleEndRoom} isOutlined>
+            <Button
+              onClick={() => setIsModalEndRoomOpen(true)}
+              isOutlined
+            >
               Encerrar sala
             </Button>
           </div>
@@ -98,6 +124,14 @@ export function AdminRoom() {
         </div>
 
         <div className="question-list">
+          {questions.length <= 0 && (
+            <div className="no-messages">
+              <img src={messagesImg} alt="Sem mensagens..." />
+              <h2>Nenhuma pergunta por aqui...</h2>
+              <p>Faça o seu login e seja a primeira pessoa a fazer uma pergunta!</p>
+            </div>
+          )}
+
           {questions.map((question) => (
             <Question
               key={question.id}
