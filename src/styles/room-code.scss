@@ -22,9 +22,18 @@
     display: block;
     align-self: center;
     flex: 1;
-    padding: 0 16px 0 12px;
+    padding: 5px;
     width: 230px;
     font-size: 14px;
     font-weight: 500;
+
+    @media (max-width: 768px) {
+      width: 150px;
+      font-size: 12px;
+    }
+
+    @media (max-width: 480px) {
+      display: none;
+    }
   }
 }

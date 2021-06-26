@@ -1,4 +1,5 @@
 import { FormEvent, useState } from 'react';
+import toast from 'react-hot-toast';
 
 import { useHistory } from 'react-router-dom';
 
@@ -33,15 +34,17 @@ export function Home() {
       return;
     }
 
+    toast.loading('Procurando sala...');
     const roomRef = await database.ref(`rooms/${roomCode}`).get();
+    toast.dismiss();
 
     if(!roomRef.exists()) {
-      alert('This room doesn\'t exists!');
+      toast.error('Esta sala não existe!');
       return;
     }
 
     if (roomRef.val().endedAt) {
-      alert('Room already closed!');
+      toast.error('Esta sala foi encerrada!');
       return;
     }
 

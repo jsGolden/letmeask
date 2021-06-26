@@ -1,4 +1,5 @@
 import { BrowserRouter, Route, Switch } from "react-router-dom";
+import { Toaster } from 'react-hot-toast';
 
 import { AuthContextProvider } from './contexts/AuthContext';
 
@@ -11,6 +12,12 @@ function App() {
   return (
     <BrowserRouter>
       <AuthContextProvider>
+
+      <Toaster
+        position="top-right"
+        reverseOrder
+      />
+
         <Switch>
           <Route path="/" exact component={Home} />
           <Route path="/rooms/new" component={NewRoom} />

@@ -1,8 +1,8 @@
+import { useState } from "react";
 import { useHistory, useParams } from "react-router-dom";
-
 import { database } from "../services/firebase";
+import toast, { ToastBar } from "react-hot-toast";
 
-import { useAuth } from "../hooks/useAuth";
 import { useRoom } from "../hooks/useRoom";
 
 import logoImg from "../assets/images/logo.svg";
@@ -10,6 +10,7 @@ import deleteImg from "../assets/images/delete.svg";
 import checkImg from "../assets/images/check.svg";
 import answerImg from "../assets/images/answer.svg";
 
+import { ModalConfirmDelete } from "../components/ModalConfirmDelete";
 import { Button } from "../components/Button";
 import { RoomCode } from "../components/RoomCode";
 import { Question } from "../components/Question";
@@ -22,12 +23,14 @@ type RoomParams = {
 
 export function AdminRoom() {
   const history = useHistory();
-  //const { user } = useAuth();
 
   const params = useParams<RoomParams>();
   const roomId = params.id;
 
   const { title, questions } = useRoom(roomId);
+
+  const [currentDeleteQuestionId, setCurrentDeleteQuestionId] = useState<string>();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   async function handleEndRoom() {
     await database.ref(`rooms/${roomId}`).update({
@@ -37,10 +40,22 @@ export function AdminRoom() {
     history.push("/");
   }
 
-  async function handleDeleteQuestion(questionId: string) {
-    if (window.confirm("Tem certeza que deseja excluir esta pergunta?")) {
-      await database.ref(`rooms/${roomId}/questions/${questionId}`).remove();
-    }
+  function handleQuestionClickDelete(questionId: string) {
+    setCurrentDeleteQuestionId(questionId);
+    setIsModalOpen(true);
+  }
+
+  async function handleDeleteQuestion() {
+    const refPromise = database
+      .ref(`rooms/${roomId}/questions/${currentDeleteQuestionId}`)
+      .remove();
+
+    setIsModalOpen(false);
+    toast.promise(refPromise, {
+      loading: "Deletando...",
+      error: "Erro ao deletar!",
+      success: "Deletado com sucesso!"
+    })
   }
 
   async function handleCheckQuestionAsAnswered(questionId: string) {
@@ -57,6 +72,13 @@ export function AdminRoom() {
 
   return (
     <div id="page-room">
+
+      <ModalConfirmDelete
+        isOpen={isModalOpen}
+        onClickDelete={handleDeleteQuestion}
+        onClickCancel={() => setIsModalOpen(false)}
+      />
+
       <header>
         <div className="content">
           <img src={logoImg} alt="Letmeask" />
@@ -72,7 +94,7 @@ export function AdminRoom() {
       <main>
         <div className="room-title">
           <h1>Sala {title}</h1>
-          {questions.length && <span>{questions.length} pergunta(s)</span>}
+          {questions.length > 0 && <span>{questions.length} pergunta(s)</span>}
         </div>
 
         <div className="question-list">
@@ -104,7 +126,7 @@ export function AdminRoom() {
 
               <button
                 type="button"
-                onClick={() => handleDeleteQuestion(question.id)}
+                onClick={() => handleQuestionClickDelete(question.id)}
               >
                 <img src={deleteImg} alt="Remover pergunta" />
               </button>
