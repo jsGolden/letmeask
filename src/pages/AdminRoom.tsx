@@ -128,7 +128,7 @@ export function AdminRoom() {
             <div className="no-messages">
               <img src={messagesImg} alt="Sem mensagens..." />
               <h2>Nenhuma pergunta por aqui...</h2>
-              <p>Faça o seu login e seja a primeira pessoa a fazer uma pergunta!</p>
+              <p>Compartilhe seu código para receber as dúvidas!</p>
             </div>
           )}
 

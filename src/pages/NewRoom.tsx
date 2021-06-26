@@ -1,5 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { Link, useHistory } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 import { useAuth } from '../hooks/useAuth';
 
@@ -20,18 +21,27 @@ export function NewRoom() {
   async function handleCreateRoom(event: FormEvent) {
     event.preventDefault();
 
+    if (!user) {
+      toast.error('Você precisa estar logado para criar uma sala!');
+      return;
+    }
+
     if(newRoom.trim() === '') {
       return;
     }
 
     const roomRef = database.ref('rooms');
 
-    const { key } = await roomRef.push({
-      title: newRoom,
-      authorId: user?.id,
-    });
-
-    history.push(`/rooms/${key}`);
+    try {
+      const { key } = await roomRef.push({
+        title: newRoom,
+        authorId: user?.id,
+      });
+      toast.success('Sala criada com sucesso!');
+      history.push(`/admin/rooms/${key}`);
+    } catch {
+      toast.error('Erro ao criar sala!');
+    }
   }
 
   //if (!user) return <Redirect to="/" />;
