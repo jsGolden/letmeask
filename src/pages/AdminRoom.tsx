@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useHistory, useParams } from "react-router-dom";
 import { database } from "../services/firebase";
 import toast from "react-hot-toast";
 
 import { useRoom } from "../hooks/useRoom";
+import { useAuth } from "../hooks/useAuth";
 
 import logoImg from "../assets/images/logo.svg";
 import deleteImg from "../assets/images/delete.svg";
@@ -28,11 +29,21 @@ export function AdminRoom() {
   const params = useParams<RoomParams>();
   const roomId = params.id;
 
-  const { title, questions } = useRoom(roomId);
+  const { title, questions, roomOwnerId } = useRoom(roomId);
+  const { user } = useAuth();
 
   const [currentDeleteQuestionId, setCurrentDeleteQuestionId] = useState<string>();
   const [isModalEndRoomOpen, setIsModalEndRoomOpen] = useState(false);
   const [isModalDeleteQuestionOpen, setIsModalDeleteQuestionOpen] = useState(false);
+
+  useEffect(() => {
+    if (roomOwnerId && user?.id) {
+      if (roomOwnerId !== user?.id) {
+        history.push('/');
+        toast.error('Você não possui acesso à administração desta sala!')
+      }
+    }
+  }, [roomOwnerId, user, history])
 
   async function handleEndRoom() {
     const refPromise = database.ref(`rooms/${roomId}`).update({

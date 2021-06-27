@@ -1,4 +1,7 @@
 import { useEffect, useState } from "react";
+import { useHistory } from "react-router-dom";
+import toast from "react-hot-toast";
+
 import { database } from "../services/firebase";
 import { useAuth } from "./useAuth";
 
@@ -35,15 +38,26 @@ type QuestionType = {
 };
 
 export function useRoom(roomId: string) {
+  const history = useHistory();
   const { user } = useAuth();
+
   const [questions, setQuestions] = useState<QuestionType[]>([]);
   const [title, setTitle] = useState("");
+  const [roomOwnerId, setRoomOwnerId] = useState('');
 
   useEffect(() => {
     const roomRef = database.ref(`rooms/${roomId}`);
+
     roomRef.on("value", (room) => {
       const databaseRoom = room.val();
+      if (!databaseRoom) {
+        history.push('/');
+        toast.error('Esta sala não existe!')
+        return;
+      }
+
       const firebaseQuestions: FirebaseQuestions = databaseRoom.questions ?? {};
+      setRoomOwnerId(databaseRoom.authorId);
 
       const parsedQuestions = Object.entries(firebaseQuestions).map(
         ([key, value]) => {
@@ -69,5 +83,5 @@ export function useRoom(roomId: string) {
     };
   }, [roomId, user]);
 
-  return { questions, title };
+  return { questions, title, roomOwnerId };
 }
